@@ -77,6 +77,7 @@
 (* -------------------------------------------------------------------------- *)
 
 (* -------------------------------------------------------------------- *)
+From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
 From mathcomp Require Import seq path choice finset fintype finfun tuple.
 From mathcomp Require Import bigop ssralg ssrint matrix vector fingroup.
@@ -128,7 +129,9 @@ Proof.
 case: r => // x r _; elim: r => [|y r ih].
   by exists x; rewrite mem_seq1 big_seq1 !eqxx.
 pose v := (\join_(i <- x :: r) F i)%O.
-case: (Order.TotalPOrderMixin.leP letot v (F y)) => [le|lt].
+pose totU := Order.Total.clone disp
+  (Order.DistrLattice_IsTotal.Build disp U letot) _.
+case: (@leP disp totU v (F y)) => [le|lt].
   exists y; rewrite !(in_cons, eqxx) orbT /=.
   rewrite !big_cons joinCA; apply/eqP/join_l.
   by apply/(le_trans _ le); rewrite /v big_cons.
@@ -248,7 +251,7 @@ Inductive multinom : predArgType :=
 
 Coercion multinom_val M := let: Multinom m := M in m.
 
-Canonical multinom_subType := Eval hnf in [newType for multinom_val].
+HB.instance Definition _ := [IsNew for multinom_val].
 
 Definition fun_of_multinom M (i : 'I_n) := tnth (multinom_val M) i.
 
@@ -265,20 +268,7 @@ Notation "[ 'multinom' E | i < n ]" := [multinom [tuple E | i < n]] : form_scope
 (* -------------------------------------------------------------------- *)
 Notation "''X_{1..' n '}'" := (multinom n).
 
-Definition multinom_eqMixin n :=
-  Eval hnf in [eqMixin of 'X_{1..n} by <:].
-Canonical multinom_eqType n :=
-  Eval hnf in EqType 'X_{1..n} (multinom_eqMixin n).
-Definition multinom_choiceMixin n :=
-  [choiceMixin of 'X_{1..n} by <:].
-Canonical multinom_choiceType n :=
-  Eval hnf in ChoiceType 'X_{1..n} (multinom_choiceMixin n).
-Definition multinom_countMixin n :=
-  [countMixin of 'X_{1..n} by <:].
-Canonical multinom_countType n :=
-  Eval hnf in CountType 'X_{1..n} (multinom_countMixin n).
-Canonical multinom_subCountType n :=
-  Eval hnf in [subCountType of 'X_{1..n}].
+HB.instance Definition _ n := [Countable of 'X_{1..n} by <:].
 
 Bind Scope multi_scope with multinom.
 
@@ -619,11 +609,8 @@ rewrite /mnmc_lt /mnmc_le ltxi_cons lexi_cons /= -!(val_eqE _)/=.
 by case: (comparableP (_ : seq _)) => //= /val_inj/val_inj->; rewrite lexx.
 Qed.
 
-Definition multinom_porderMixin :=
-  LePOrderMixin ltmc_def lemc_refl lemc_anti lemc_trans.
-
-Canonical multinom_porderType :=
-  Eval hnf in POrderType tt 'X_{1..n} multinom_porderMixin.
+HB.instance Definition _ := Order.IsPOrdered.Build tt 'X_{1..n}
+  ltmc_def lemc_refl lemc_anti lemc_trans.
 
 Lemma leEmnm m1 m2 : (m1 <= m2)%O = (mdeg m1 :: val m1 <= mdeg m2 :: val m2)%O.
 Proof. by []. Qed.
@@ -631,13 +618,7 @@ Proof. by []. Qed.
 Lemma ltEmnm (m m' : 'X_{1..n}) : (m < m')%O = (mdeg m :: m < mdeg m' :: m')%O.
 Proof. by []. Qed.
 
-Definition multinom_latticeMixin : totalPOrderMixin _ := lemc_total.
-Canonical multinom_latticeType :=
-  Eval hnf in LatticeType 'X_{1..n} multinom_latticeMixin.
-Canonical multinom_distrLatticeType :=
-  Eval hnf in DistrLatticeType 'X_{1..n} multinom_latticeMixin.
-
-Canonical multinom_orderType := OrderType 'X_{1..n} lemc_total.
+HB.instance Definition _ := Order.POrder_IsTotal.Build tt 'X_{1..n} lemc_total.
 
 Lemma le0m (m : 'X_{1..n}) : (0%MM <= m)%O.
 Proof.
@@ -646,11 +627,7 @@ rewrite leEmnm /=; have [/eqP|] := altP (mdeg m =P 0%N).
 by rewrite -lt0n mdeg0 lexi_cons/= leEnat; case: ltngtP.
 Qed.
 
-Definition multinom_blatticeMixin := Order.BottomMixin.Build le0m.
-Canonical multinom_blatticeType :=
-  Eval hnf in BLatticeType 'X_{1..n} multinom_blatticeMixin.
-Canonical multinom_bDistrLatticeType :=
-  [bDistrLatticeType of 'X_{1..n}].
+HB.instance Definition _ := Order.HasBottom.Build tt 'X_{1..n} le0m.
 
 Lemma ltmcP m1 m2 : mdeg m1 = mdeg m2 -> reflect
   (exists2 i : 'I_n, forall (j : 'I_n), (j < i)%N -> m1 j = m2 j & m1 i < m2 i)
@@ -763,7 +740,7 @@ move=> ih m; move: {2}(tof _) (erefl (tof m))=> t.
 elim/(@ltxwf _ [porderType of nat]): t m=> //=; last first.
   move=> t wih m Em; apply/ih=> m' lt_m'm.
   apply/(wih (tof m'))=> //; rewrite -Em.
-  by rewrite /tof ltEsub/= -ltEmnm.
+  by rewrite /tof Order.SubOrder.ltEsub /= -ltEmnm.
 move=> Q {}ih x; elim: x {-2}x (leqnn x).
   move=> x; rewrite leqn0=> /eqP->; apply/ih.
   by move=> y; rewrite ltEnat/= ltn0.
@@ -782,15 +759,8 @@ Variable n bound : nat.
 
 Record bmultinom := BMultinom { bmnm :> 'X_{1..n}; _ : mdeg bmnm < bound }.
 
-Canonical bmultinom_subType := Eval hnf in [subType for bmnm].
-
-Definition bmultinom_eqMixin      := Eval hnf in [eqMixin of bmultinom by <:].
-Canonical  bmultinom_eqType       := Eval hnf in EqType bmultinom bmultinom_eqMixin.
-Definition bmultinom_choiceMixin  := [choiceMixin of bmultinom by <:].
-Canonical  bmultinom_choiceType   := Eval hnf in ChoiceType bmultinom bmultinom_choiceMixin.
-Definition bmultinom_countMixin   := [countMixin of bmultinom by <:].
-Canonical  bmultinom_countType    := Eval hnf in CountType bmultinom bmultinom_countMixin.
-Canonical  bmultinom_subCountType := Eval hnf in [subCountType of bmultinom].
+HB.instance Definition _ := [IsSUB for bmnm].
+HB.instance Definition _ := [Countable of bmultinom by <:].
 
 Lemma bmeqP (m1 m2 : bmultinom) : (m1 == m2) = (m1 == m2 :> 'X_{1..n}).
 Proof. by rewrite eqE. Qed.
@@ -829,9 +799,7 @@ move: lt_dm_Sb; rewrite mdegE (bigD1 i) //= multinomE.
 by move/(leq_trans _)=> ->//; rewrite ltnS leq_addr.
 Qed.
 
-Canonical bmnm_finMixin   := Eval hnf in FinMixin bmnm_enumP.
-Canonical bmnm_finType    := Eval hnf in FinType 'X_{1..n < b} bmnm_finMixin.
-Canonical bmnm_subFinType := Eval hnf in [subFinType of 'X_{1..n < b}].
+HB.instance Definition _ := IsFinite.Build 'X_{1..n < b} bmnm_enumP.
 End FinDegBound.
 
 Section Mlcm.
@@ -880,11 +848,8 @@ Inductive mpoly := MPoly of {freeg 'X_{1..n} / R}.
 
 Coercion mpoly_val p := let: MPoly D := p in D.
 
-Canonical  mpoly_subType     := Eval hnf in [newType for mpoly_val].
-Definition mpoly_eqMixin     := Eval hnf in [eqMixin of mpoly by <:].
-Canonical  mpoly_eqType      := Eval hnf in EqType mpoly mpoly_eqMixin.
-Definition mpoly_choiceMixin := [choiceMixin of mpoly by <:].
-Canonical  mpoly_choiceType  := Eval hnf in ChoiceType mpoly mpoly_choiceMixin.
+HB.instance Definition _ := [IsNew for mpoly_val].
+HB.instance Definition _ := [Choice of mpoly by <:].
 
 Definition mpoly_of of phant R := mpoly.
 
@@ -1023,13 +988,9 @@ Proof. by move=> p q; apply/mpoly_eqP; rewrite !mpoly_valK addrC. Qed.
 Lemma add_mpolyA : associative mpoly_add.
 Proof. by move=> p q r; apply/mpoly_eqP; rewrite !mpoly_valK addrA. Qed.
 
-Definition mpoly_zmodMixin :=
-  ZmodMixin add_mpolyA add_mpolyC add_mpoly0 add_mpolyN.
-
-Canonical mpoly_zmodType :=
-  Eval hnf in ZmodType {mpoly R[n]} mpoly_zmodMixin.
-Canonical mpolynomial_zmodType :=
-  Eval hnf in ZmodType (mpoly n R) mpoly_zmodMixin.
+HB.instance Definition _ := GRing.IsZmodule.Build (mpoly n R)
+  add_mpolyA add_mpolyC add_mpoly0 add_mpolyN.
+HB.instance Definition _ := GRing.Zmodule.on {mpoly R[n]}.
 
 Definition mpoly_scale c p := [mpoly c *: (mpoly_val p)].
 
@@ -1051,13 +1012,9 @@ Lemma scale_mpolyDl p c1 c2 :
   (c1 + c2) *:M p = c1 *:M p + c2 *:M p.
 Proof. by apply/mpoly_eqP; rewrite !mpoly_valK scalerDl. Qed.
 
-Definition mpoly_lmodMixin :=
-  LmodMixin scale_mpolyA scale_mpoly1m scale_mpolyDr scale_mpolyDl.
-
-Canonical mpoly_lmodType :=
-  Eval hnf in LmodType R {mpoly R[n]} mpoly_lmodMixin.
-Canonical mpolynomial_lmodType :=
-  Eval hnf in LmodType R (mpoly n R) mpoly_lmodMixin.
+HB.instance Definition _ := GRing.Zmodule_IsLmodule.Build R (mpoly n R)
+ scale_mpolyA scale_mpoly1m scale_mpolyDr scale_mpolyDl.
+HB.instance Definition _ := GRing.Lmodule.on {mpoly R[n]}.
 
 Local Notation mcoeff := (@mcoeff n R).
 
@@ -1376,10 +1333,7 @@ Section IPoly.
 Variable R : ringType.
 Variable n : nat.
 
-Canonical ipoly_eqType     := [eqType     of {ipoly R[n]}^p].
-Canonical ipoly_choiceType := [choiceType of {ipoly R[n]}^p].
-Canonical ipoly_zmodType   := [zmodType   of {ipoly R[n]}^p].
-Canonical ipoly_ringType   := [ringType   of {ipoly R[n]}^p].
+HB.instance Definition _ := GRing.Ring.on {ipoly R[n]}^p.
 End IPoly.
 
 (* -------------------------------------------------------------------- *)
@@ -1444,11 +1398,8 @@ Proof. by rewrite raddfD /= mulrDl. Qed.
 
 Definition iscale (c : R) (p : {ipoly R[n]}) := c%:IP * p.
 
-Definition ipoly_lmodMixin :=
-  let mkMixin := @GRing.Lmodule.Mixin R (ipoly_zmodType R n) iscale in
-  mkMixin iscaleA iscale1r iscaleDr iscaleDl.
-
-Canonical ipoly_lmodType := LmodType R {ipoly R[n]}^p ipoly_lmodMixin.
+HB.instance Definition _ := GRing.Zmodule_IsLmodule.Build R {ipoly R[n]}^p
+  iscaleA iscale1r iscaleDr iscaleDl.
 End IScale.
 
 Definition injectX n (m : 'X_{1..n}) : {ipoly R[n]} :=
@@ -1668,13 +1619,9 @@ Qed.
 Lemma poly_oner_neq0 : 1%:MP != 0 :> {mpoly R[n]}.
 Proof. by rewrite mpolyC_eq oner_eq0. Qed.
 
-Definition mpoly_ringMixin :=
-  RingMixin poly_mulA poly_mul1m poly_mulm1
-            poly_mulDl poly_mulDr poly_oner_neq0.
-Canonical mpoly_ringType :=
-  Eval hnf in RingType {mpoly R[n]} mpoly_ringMixin.
-Canonical mpolynomial_ringType :=
-  Eval hnf in RingType (mpoly n R) mpoly_ringMixin.
+HB.instance Definition _ := GRing.Zmodule_IsRing.Build (mpoly n R)
+  poly_mulA poly_mul1m poly_mulm1 poly_mulDl poly_mulDr poly_oner_neq0.
+HB.instance Definition _ := GRing.Ring.on {mpoly R[n]}.
 
 Lemma mcoeff1 m : 1@_m = (m == 0%MM)%:R.
 Proof. by rewrite mcoeffC mul1r. Qed.
@@ -1781,10 +1728,9 @@ Qed.
 Lemma mpoly_scaleAl c p q : c *: (p * q) = (c *: p) * q.
 Proof. by rewrite -!mul_mpolyC mulrA. Qed.
 
-Canonical mpoly_lalgType :=
-  Eval hnf in LalgType R {mpoly R[n]} mpoly_scaleAl.
-Canonical mpolynomial_lalgType :=
-  Eval hnf in LalgType R (mpoly n R) mpoly_scaleAl.
+HB.instance Definition _ := GRing.Lmodule_IsLalgebra.Build R (mpoly n R)
+  mpoly_scaleAl.
+HB.instance Definition _ := GRing.Lalgebra.on {mpoly R[n]}.
 
 Lemma alg_mpolyC c : c%:A = c%:MP :> {mpoly R[n]}.
 Proof. by rewrite -mul_mpolyC mulr1. Qed.
@@ -2978,15 +2924,12 @@ apply/mpolyP=> /= m; rewrite mcoeffM mcoeffMr.
 by apply: eq_bigr=> /= i _; rewrite mulrC.
 Qed.
 
-Canonical mpoly_comRingType :=
-  Eval hnf in ComRingType {mpoly R[n]} mpoly_mulC.
-Canonical mpolynomial_comRingType :=
-  Eval hnf in ComRingType (mpoly n R) mpoly_mulC.
+HB.instance Definition _ := GRing.Ring_HasCommutativeMul.Build (mpoly n R)
+  mpoly_mulC.
+HB.instance Definition _ := GRing.ComRing.on {mpoly R[n]}.
 
-Canonical mpoly_algType :=
-  Eval hnf in CommAlgType R {mpoly R[n]}.
-Canonical mpolynomial_algType :=
-  Eval hnf in [algType R of mpoly n R for mpoly_algType].
+HB.instance Definition _ := GRing.is_ComAlgebra.Build R {mpoly R[n]}.  (* FIXME: what's the purpose of this factory? *)
+HB.instance Definition _ := GRing.is_ComAlgebra.Build R (mpoly n R).  (* FIXME: what's the purpose of this factory? *)
 End MPolyComRing.
 
 (* -------------------------------------------------------------------- *)
@@ -3503,28 +3446,13 @@ Qed.
 Lemma mpoly_inv_out : {in [predC mpoly_unit], mpoly_inv =1 id}.
 Proof.  by rewrite /mpoly_inv => p /negbTE /= ->. Qed.
 
-Definition mpoly_comUnitMixin :=
-  ComUnitRingMixin mpoly_mulVp mpoly_intro_unit mpoly_inv_out.
+HB.instance Definition _ := GRing.ComRing_HasMulInverse.Build (mpoly n R)
+  mpoly_mulVp mpoly_intro_unit mpoly_inv_out.
+HB.instance Definition _ := GRing.ComUnitRing.on {mpoly R[n]}.
 
-Canonical mpoly_unitRingType :=
-  Eval hnf in UnitRingType {mpoly R[n]} mpoly_comUnitMixin.
-Canonical mpolynomial_unitRingType :=
-  Eval hnf in [unitRingType of mpoly n R for mpoly_unitRingType].
-
-Canonical mpoly_unitAlgType :=
-  Eval hnf in [unitAlgType R of {mpoly R[n]}].
-Canonical mpolynomial_unitAlgType :=
-  Eval hnf in [unitAlgType R of mpoly n R].
-
-Canonical mpoly_comUnitRingType :=
-  Eval hnf in [comUnitRingType of {mpoly R[n]}].
-Canonical mpolynomial_comUnitRingType :=
-  Eval hnf in [comUnitRingType of mpoly n R].
-
-Canonical mpoly_idomainType :=
-  Eval hnf in IdomainType {mpoly R[n]} mpoly_idomainAxiom.
-Canonical mpolynomial_idomainType :=
-  Eval hnf in [idomainType of mpoly n R for mpoly_idomainType].
+HB.instance Definition _ := GRing.ComUnitRing_IsIntegral.Build (mpoly n R)
+  mpoly_idomainAxiom.
+HB.instance Definition _ := GRing.IntegralDomain.on {mpoly R[n]}.
 End MPolyIdomain.
 
 (* -------------------------------------------------------------------- *)
@@ -4438,7 +4366,7 @@ Proof.
 rewrite -setI_eq0; apply/eqP/setP=> /= x.
 rewrite !in_set; apply/negP=> /andP[].
 case/imsetP=> /= h1 _ -> /imsetP /= [h2 _].
-move/setP/(_ ord_max); rewrite !in_set eqxx /=.
+move/setP/(_ ord_max); rewrite in_set in_set1 eqxx /=.
 case/imsetP=> /= {h1 h2} m _ /eqP.
 by rewrite eqE /= eq_sym ltn_eqF.
 Qed.
@@ -5141,18 +5069,10 @@ Inductive dhomog := DHomog (p : {mpoly R[n]}) of p \is d.-homog.
 Coercion mpoly_of_dhomog (p : dhomog) :=
   let: DHomog p _ := p in p.
 
-Canonical  dhomog_subType := Eval hnf in [subType for @mpoly_of_dhomog].
-Definition dhomog_eqMixin := Eval hnf in [eqMixin of dhomog by <:].
-Canonical  dhomog_eqType  := Eval hnf in EqType dhomog dhomog_eqMixin.
-
-Definition dhomog_choiceMixin := [choiceMixin of dhomog by <:].
-Canonical  dhomog_choiceType  := Eval hnf in ChoiceType dhomog dhomog_choiceMixin.
-
-Definition dhomog_zmodMixin := [zmodMixin of dhomog by <:].
-Canonical  dhomog_zmodType  := Eval hnf in ZmodType dhomog dhomog_zmodMixin.
-
-Definition dhomog_lmodMixin := [lmodMixin of dhomog by <:].
-Canonical  dhomog_lmodType  := Eval hnf in LmodType R dhomog dhomog_lmodMixin.
+HB.instance Definition _ := [IsSUB for @mpoly_of_dhomog].
+HB.instance Definition _ := [Choice of dhomog by <:].
+HB.instance Definition _ := [zmodMixin of dhomog by <:].  (* FIXME: shouldn't it be Zmodule instead of zmodMixin? *)
+HB.instance Definition _ := [lmodMixin of dhomog by <:].
 
 Lemma mpoly_of_dhomog_is_linear: linear mpoly_of_dhomog.
 Proof. by []. Qed.
@@ -5274,7 +5194,7 @@ Variable n : nat.
 Variable R : ringType.
 Variable d : nat.
 
-Lemma dhomog_vecaxiom: Vector.axiom 'C(d + n, d) (dhomog n.+1 R d).
+Lemma dhomog_vecaxiom: Vector.axiom 'C(d + n, d) (Phant (dhomog n.+1 R d)).
 Proof.
 pose b := sbasis n.+1 d.
 pose t := [tuple of nseq d (0 : 'I_n.+1)].
@@ -5319,11 +5239,8 @@ move=> m'; apply/contraTeq; rewrite mcoeffZ mcoeffX.
 by case: (m' =P m)=> [->|_]; last rewrite mulr0 eqxx.
 Qed.
 
-Definition dhomog_vectMixin :=
-  VectMixin dhomog_vecaxiom.
-
-Canonical dhomog_vectType :=
-  Eval hnf in VectType R (dhomog n.+1 R d) dhomog_vectMixin.
+HB.instance Definition _ := Lmodule_HasFinDim.Build R (dhomog n.+1 R d)
+  dhomog_vecaxiom.
 End MPolyHomogVec.
 
 (* -------------------------------------------------------------------- *)

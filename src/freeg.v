@@ -23,6 +23,7 @@
 (***********************************************************************)
 
 (* -------------------------------------------------------------------- *)
+From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
 From mathcomp Require Import seq choice fintype bigop ssralg ssrnum ssrint.
 From mathcomp Require Import order generic_quotient.
@@ -85,14 +86,8 @@ Module FreegDefs.
     Lemma prefreeg_uniq: forall (D : prefreeg), uniq [seq zx.2 | zx <- D].
     Proof. by move=> D; apply reduced_uniq; apply prefreeg_reduced. Qed.
 
-    Canonical prefreeg_subType :=
-      [subType for seq_of_prefreeg].
-
-    Definition prefreeg_eqMixin := Eval hnf in [eqMixin of prefreeg by <:].
-    Canonical  prefreeg_eqType  := Eval hnf in EqType _ prefreeg_eqMixin.
-
-    Definition prefreeg_choiceMixin := Eval hnf in [choiceMixin of prefreeg by <:].
-    Canonical  prefreeg_choiceType  := Eval hnf in ChoiceType prefreeg prefreeg_choiceMixin.
+    #[export] HB.instance Definition _ := [IsSUB for seq_of_prefreeg].
+    #[export] HB.instance Definition _ := [Choice of prefreeg by <:].
   End Defs.
 
   Arguments mkPrefreeg [G K].
@@ -122,15 +117,15 @@ Module FreegDefs.
 
     Notation "{ 'freeg' K / G }" := (type_of (Phant G) (Phant K)).
 
-    Canonical freeg_quotType   := [quotType of type].
-    Canonical freeg_eqType     := [eqType of type].
-    Canonical freeg_choiceType := [choiceType of type].
-    Canonical freeg_eqQuotType := [eqQuotType equiv of type].
+    #[export] HB.instance Definition _ := Quotient.on type.
+    #[export] HB.instance Definition _ := Choice.on type.
+    #[export] HB.instance Definition _ : EqQuotient _ equiv type :=
+      EqQuotient.on type.
 
-    Canonical freeg_of_quotType   := [quotType of {freeg K / G}].
-    Canonical freeg_of_eqType     := [eqType of {freeg K / G}].
-    Canonical freeg_of_choiceType := [choiceType of {freeg K / G}].
-    Canonical freeg_of_eqQuotType := [eqQuotType equiv of {freeg K / G}].
+    #[export] HB.instance Definition _ := Quotient.on {freeg K / G}.
+    #[export] HB.instance Definition _ := Choice.on {freeg K / G}.
+    #[export] HB.instance Definition _ : EqQuotient _ equiv {freeg K / G} :=
+      EqQuotient.on {freeg K / G}.
   End Quotient.
 
   Module Exports.
@@ -139,18 +134,7 @@ Module FreegDefs.
     Canonical prefreeg_equiv.
     Canonical prefreeg_equiv_direct.
 
-    Canonical prefreeg_subType.
-    Canonical prefreeg_eqType.
-    Canonical prefreeg_choiceType.
-    Canonical prefreeg_equiv.
-    Canonical freeg_quotType.
-    Canonical freeg_eqType.
-    Canonical freeg_choiceType.
-    Canonical freeg_eqQuotType.
-    Canonical freeg_of_quotType.
-    Canonical freeg_of_eqType.
-    Canonical freeg_of_choiceType.
-    Canonical freeg_of_eqQuotType.
+    HB.reexport.
 
     Notation prefreeg   := prefreeg.
     Notation fgequiv    := equiv.
@@ -662,14 +646,14 @@ Module FreegZmodType.
       by rewrite !rw /= addrC subrr.
     Qed.
 
-    Definition freeg_zmodMixin := ZmodMixin addmA addmC addm0 addmN.
-    Canonical  freeg_zmodType  := ZmodType {freeg K / R} freeg_zmodMixin.
+    #[export] HB.instance Definition _ := GRing.IsZmodule.Build {freeg K / R}
+      addmA addmC addm0 addmN.
   End Defs.
 
   Module Exports.
     Canonical pi_fgadd_morph.
     Canonical pi_fgopp_morph.
-    Canonical freeg_zmodType.
+    HB.reexport.
   End Exports.
 End FreegZmodType.
 
@@ -938,10 +922,8 @@ Section FreeglModType.
     by apply/eqP/freeg_eqP=> x; rewrite !(coeffD, coeff_fgscale) mulrDl.
   Qed.
 
-  Definition freeg_lmodMixin :=
-    LmodMixin fgscaleA fgscale1r fgscaleDr fgscaleDl.
-  Canonical freeg_lmodType :=
-    Eval hnf in LmodType R {freeg K / R} freeg_lmodMixin.
+  HB.instance Definition _ := GRing.Zmodule_IsLmodule.Build R {freeg K / R}
+    fgscaleA fgscale1r fgscaleDr fgscaleDl.
 End FreeglModType.
   
 (* -------------------------------------------------------------------- *)
@@ -1000,7 +982,7 @@ Section Deg.
     \sum_(kx <- D) kx.1.
 
   Lemma deg_is_additive: additive deg.
-  Proof. by apply: (@lift_is_additive _ K [lalgType int of int^o]). Qed.
+  Proof. exact: (@lift_is_additive _ K [the lalgType int of int^o]). Qed.
 
   Canonical deg_additive := Additive deg_is_additive.
 

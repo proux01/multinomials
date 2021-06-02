@@ -5,6 +5,7 @@
  * -------------------------------------------------------------------- *)
 
 (* -------------------------------------------------------------------- *)
+From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
 From mathcomp Require Import seq path choice finset fintype finfun.
 From mathcomp Require Import tuple bigop ssralg ssrint ssrnum.
@@ -70,135 +71,45 @@ Reserved Notation "x ^[ f , g ]"
   (at level 2, left associativity, format "x ^[ f , g ]").
 
 (* -------------------------------------------------------------------- *)
-Module MonomialDef.
-
-Record mixin_of (V : Type) : Type := Mixin {
+HB.mixin Record Choice_IsMonomialDef V of Choice V := {
   one : V;
   mul : V -> V -> V;
-  _   : associative mul;
-  _   : left_id one mul;
-  _   : right_id one mul;
-  _   : forall x y, mul x y = one -> x = one /\ y = one
+  mulmA : associative mul;
+  mul1m : left_id one mul;
+  mulm1 : right_id one mul;
+  unitm : forall x y, mul x y = one -> x = one /\ y = one
 }.
 
-Section ClassDef.
+HB.structure Definition MonomialDef :=
+  { V of Choice V & Choice_IsMonomialDef V }.
 
-Record class_of T := Class
- { base : Choice.class_of T; mixin : mixin_of T }.
-
-Structure type := Pack {sort; _ : class_of sort}.
-
-Local Coercion base : class_of >-> Choice.class_of.
-Local Coercion sort : type >-> Sortclass.
-
-Variables (T : Type) (cT : type).
-
-Definition class := let: Pack _ c as cT' := cT return class_of cT' in c.
-Definition clone c of phant_id class c := @Pack T c.
-
-Let xT := let: Pack T _ := cT in T.
-Notation xclass := (class : class_of xT).
-
-Definition pack m :=
-  fun bT b & phant_id (Choice.class bT) b => Pack (@Class T b m).
-
-Definition eqType := @Equality.Pack cT xclass.
-Definition choiceType := @Choice.Pack cT xclass.
-
-End ClassDef.
-
-Module Exports.
-Coercion base : class_of >-> Choice.class_of.
-Coercion mixin : class_of >-> mixin_of.
-Coercion sort : type >-> Sortclass.
-
-Coercion  eqType : type >-> Equality.type.
-Canonical eqType.
-Coercion  choiceType : type >-> Choice.type.
-Canonical choiceType.
-
-Bind Scope m_scope with sort.
-
-Notation monomType := type.
-Notation MonomType T m := (@pack T m _ _ id).
-Notation MonomMixin := Mixin.
-
-Notation "[ 'monomType' 'of' T 'for' cT ]" := (@clone T cT _ idfun)
-  (at level 0, format "[ 'monomType'  'of'  T  'for'  cT ]") : form_scope.
-Notation "[ 'monomType' 'of' T ]" := (@clone T _ _ id)
-  (at level 0, format "[ 'monomType'  'of'  T ]") : form_scope.
-End Exports.
-End MonomialDef.
+Module MonomialDefExports.
+Bind Scope m_scope with MonomialDef.sort.
+Notation monomType := MonomialDef.type.
+End MonomialDefExports.
 
 (* -------------------------------------------------------------------- *)
-Import MonomialDef.Exports.
+Import MonomialDefExports.
 
-Definition mone {M} := MonomialDef.one (MonomialDef.class M).
-Definition mmul {M} := MonomialDef.mul (MonomialDef.class M).
+Definition mone {m} := @one m.
+Definition mmul {m} := @mul m.
 
 (* -------------------------------------------------------------------- *)
-Module ConomialDef.
-
-Section ClassDef.
-
-Record class_of (M : Type) : Type := Class {
-  base  : MonomialDef.class_of M;
-  mixin : commutative (MonomialDef.mul base)
+HB.mixin Record MonomialDef_IsConomialDef V of MonomialDef V := {
+  mulmC : commutative (@mul [the monomType of V])
 }.
 
-Structure type := Pack {sort; _ : class_of sort}.
+HB.structure Definition ConomialDef :=
+  { V of MonomialDef V & MonomialDef_IsConomialDef V }.
 
-Local Coercion base : class_of >-> MonomialDef.class_of.
-Local Coercion sort : type >-> Sortclass.
-
-Variables (T : Type) (cT : type).
-
-Definition class := let: Pack _ c as cT' := cT return class_of cT' in c.
-Definition clone c of phant_id class c := @Pack T c.
-
-Let xT := let: Pack T _ := cT in T.
-Notation xclass := (class : class_of xT).
-
-Definition pack mul0 (m0 : @commutative T T mul0) :=
-  fun bT b & phant_id (MonomialDef.class bT) b =>
-  fun    m & phant_id m0 m => Pack (@Class T b m).
-
-Definition eqType     := @Equality.Pack cT xclass.
-Definition choiceType := @Choice.Pack cT xclass.
-Definition monomType  := @MonomialDef.Pack cT xclass.
-
-End ClassDef.
-
-Module Exports.
-Coercion base  : class_of >-> MonomialDef.class_of.
-Coercion mixin : class_of >-> commutative.
-Coercion sort  : type >-> Sortclass.
-
-Coercion eqType : type >-> Equality.type.
-Coercion choiceType : type >-> Choice.type.
-Coercion monomType : type >-> MonomialDef.type.
-
-Canonical eqType.
-Canonical choiceType.
-Canonical monomType.
-
-Bind Scope m_scope with sort.
-
-Notation conomType := type.
-Notation ConomType T m := (@pack T _ m _ _ id _ id).
-Notation ConomMixin := MonomialDef.Mixin.
-
-Notation "[ 'conomType' 'of' T 'for' cT ]" := (@clone T cT _ idfun)
-  (at level 0, format "[ 'conomType'  'of'  T  'for'  cT ]") : form_scope.
-Notation "[ 'conomType' 'of' T ]" := (@clone T _ _ id)
-  (at level 0, format "[ 'conomType'  'of'  T ]") : form_scope.
-End Exports.
-
-End ConomialDef.
+Module ConomialDefExports.
+Bind Scope m_scope with ConomialDef.sort.
+Notation conomType := ConomialDef.type.
+End ConomialDefExports.
 
 (* -------------------------------------------------------------------- *)
-Export MonomialDef.Exports.
-Export ConomialDef.Exports.
+Export MonomialDefExports.
+Export ConomialDefExports.
 
 Local Notation "1" := (@mone _) : m_scope.
 Local Notation "*%R" := (@mmul _) : m_scope.
@@ -209,14 +120,13 @@ Module MonomialTheory.
 Section Monomial.
 Variable M : monomType.
 
-Lemma mulmA : associative  (@mmul M). Proof. by case M => T [? []]. Qed.
-Lemma mul1m : left_id  1%M (@mmul M). Proof. by case M => T [? []]. Qed.
-Lemma mulm1 : right_id 1%M (@mmul M). Proof. by case M => T [? []]. Qed.
+Lemma mulmA : associative  (@mmul M). Proof. exact: mulmA. Qed.
+Lemma mul1m : left_id  1%M (@mmul M). Proof. exact: mul1m. Qed.
+Lemma mulm1 : right_id 1%M (@mmul M). Proof. exact: mulm1. Qed.
 
 Local Open Scope m_scope.
 
-Lemma unitm (x y : M) : x * y = 1 -> x = 1 /\ y = 1.
-Proof. by case: M x y => T [? []]. Qed.
+Lemma unitm (x y : M) : x * y = 1 -> x = 1 /\ y = 1. Proof. exact: unitm. Qed.
 
 Canonical monom_monoid := Monoid.Law mulmA mul1m mulm1.
 
@@ -232,8 +142,7 @@ Variable M : conomType.
 
 Local Open Scope m_scope.
 
-Lemma mulmC : commutative (@mmul M).
-Proof. by case M => T []. Qed.
+Lemma mulmC : commutative (@mmul M). Proof. exact: mulmC. Qed.
 
 Canonical conom_monoid := Monoid.Law (@mulmA M) (@mul1m M) (@mulm1 M).
 Canonical conom_comoid := Monoid.ComLaw mulmC.
@@ -326,11 +235,8 @@ Notation "{ 'malg' K }" :=
 Section MalgCanonicals.
 Variable (K : choiceType) (G : zmodType).
 
-Canonical  malgType := Eval hnf in [newType for (@malg_val K G)].
-Definition malg_eqMixin := Eval hnf in [eqMixin of {malg G[K]} by <:].
-Canonical  malg_eqType := Eval hnf in EqType {malg G[K]} malg_eqMixin.
-Definition malg_choiceMixin := Eval hnf in [choiceMixin of {malg G[K]} by <:].
-Canonical  malg_choiceType := Eval hnf in ChoiceType {malg G[K]} malg_choiceMixin.
+HB.instance Definition _ := [IsNew for @malg_val K G].
+HB.instance Definition _ := [Choice of {malg G[K]} by <:].
 End MalgCanonicals.
 
 (* -------------------------------------------------------------------- *)
@@ -394,8 +300,8 @@ Lemma malgP (g1 g2 : {malg G[K]}) :
   reflect (forall k, g1@_k = g2@_k) (g1 == g2).
 Proof.
 apply: (iffP eqP)=> [->//|]; move: g1 g2.
-case=> [g1] [g2] h; apply/eqP; rewrite -val_eqE /=.
-by apply/eqP/fsfunP=> k; move/(_ k): h.
+case=> [g1] [g2] h.
+by apply/f_equal/fsfunP=> k; move/(_ k): h.
 Qed.
 
 Lemma mcoeff_fnd (g : {fmap K -> G}) k :
@@ -480,8 +386,8 @@ Proof. by move=> x; apply/eqP/malgP=> k; rewrite !fgE addNr. Qed.
 Lemma fgaddgN : right_inverse fgzero fgopp fgadd.
 Proof. by move=> x; rewrite fgaddC fgaddNg. Qed.
 
-Definition malg_ZmodMixin := ZmodMixin fgaddA fgaddC fgadd0g fgaddNg.
-Canonical  malg_ZmodType  := Eval hnf in ZmodType {malg G[K]} malg_ZmodMixin.
+HB.instance Definition _ := GRing.IsZmodule.Build {malg G[K]}
+  fgaddA fgaddC fgadd0g fgaddNg.
 End MalgZMod.
 
 Section MAlgZModTheory.
@@ -711,10 +617,8 @@ Lemma fgscaleDl g c1 c2:
   (c1 + c2) *:g g = c1 *:g g + c2 *:g g.
 Proof. by apply/eqP/malgP=> x; rewrite !(mcoeffD, fgscaleE) mulrDl. Qed.
 
-Definition malg_lmodMixin :=
-  LmodMixin fgscaleA fgscale1r fgscaleDr fgscaleDl.
-Canonical malg_lmodType :=
-  Eval hnf in LmodType R {malg R[K]} malg_lmodMixin.
+HB.instance Definition _ := GRing.Zmodule_IsLmodule.Build R {malg R[K]}
+  fgscaleA fgscale1r fgscaleDr fgscaleDl.
 End MAlgLMod.
 
 (* -------------------------------------------------------------------- *)
@@ -933,7 +837,7 @@ move=> g1 g2 g3; pose_big_fset K E.
     rewrite [X in fgmul _ X](@fgmullw E E) //.
     have /= raddf := raddf_sum (fgmullUg_additive g1@_k1 k1).
     rewrite raddf; apply/eq_bigr=> /= k2 _; rewrite raddf.
-    by apply/eq_bigr=> /= k3 _; rewrite fgmulUU mulrA mulmA.
+    by apply/eq_bigr=> /= k3 _; rewrite fgmulUU mulrA /mmul mulmA.
   2: by close.
 rewrite [LHS](eq_bigr _ (fun _ _ => exchange_big _ _ _ _ _ _)) /=.
 rewrite exchange_big /=; apply/esym; rewrite (@fgmulEr1w E) //.
@@ -947,14 +851,14 @@ Lemma fgmul1g : left_id fgone fgmul.
 Proof.
 move=> g; rewrite fgmull; apply/eqP/malgP=> k.
 rewrite msuppU1 big_seq_fset1 [X in _=X@__]monalgE !raddf_sum /=.
-by apply/eq_bigr=> kg _; rewrite fgoneE eqxx mul1r mul1m.
+by apply/eq_bigr=> kg _; rewrite fgoneE eqxx /mmul mul1r mul1m.
 Qed.
 
 Lemma fgmulg1 : right_id fgone fgmul.
 Proof.
 move=> g; rewrite fgmulr; apply/eqP/malgP=> k.
 rewrite msuppU1 big_seq_fset1 [X in _=X@__]monalgE !raddf_sum /=.
-by apply/eq_bigr=> kg _; rewrite fgoneE eqxx mulr1 mulm1.
+by apply/eq_bigr=> kg _; rewrite fgoneE eqxx /mmul mulr1 mulm1.
 Qed.
 
 Lemma fgmulgDl : left_distributive fgmul +%R.
@@ -980,10 +884,8 @@ Qed.
 Lemma fgoner_eq0 : fgone != 0.
 Proof. by apply/malgP=> /(_ 1%M) /eqP; rewrite !mcoeffsE oner_eq0. Qed.
 
-Definition malg_ringMixin :=
-  RingMixin fgmulA fgmul1g fgmulg1 fgmulgDl fgmulgDr fgoner_eq0.
-Canonical  malg_ringType :=
-  Eval hnf in RingType {malg R[K]} malg_ringMixin.
+HB.instance Definition _ := GRing.Zmodule_IsRing.Build {malg R[K]}
+  fgmulA fgmul1g fgmulg1 fgmulgDl fgmulgDr fgoner_eq0.
 End MAlgRingType.
 
 (* -------------------------------------------------------------------- *)
@@ -1043,7 +945,7 @@ Proof. by rewrite mcoeffC. Qed.
 Lemma mul_malgC c g : c%:MP * g = c *: g.
 Proof.
 rewrite malgCE malgM_def malgZ_def (fgmulUg _ _ (fsubset_refl _)).
-by apply/eq_bigr=> /= k _; rewrite mul1m.
+by apply/eq_bigr=> /= k _; rewrite /mmul mul1m.
 Qed.
 
 Lemma mcoeffCM c g k : (c%:MP * g)@_k = c * g@_k :> R.
@@ -1115,7 +1017,7 @@ Proof.
 split=> [g1 g2|]; rewrite ?malgCK //; pose_big_fset K E.
 have E1: 1%M \in E by rewrite -fsub1set.
 rewrite (@malgMEw E E) // (big_fsetD1 1%M) //=. 2: by close.
-rewrite (big_fsetD1 1%M) //= mulm1 2!mcoeffD mcoeffUU.
+rewrite (big_fsetD1 1%M) //= /mmul mulm1 2!mcoeffD mcoeffUU.
 rewrite ![\sum_(i <- E `\ 1%M) _]big_seq.
 rewrite !raddf_sum !big1 ?simpm //= => k; rewrite in_fsetD1 => /andP [ne1_k _].
   rewrite raddf_sum big1 ?mcoeff0 //= => k'; rewrite mcoeffU.
@@ -1138,8 +1040,8 @@ Implicit Types k l     : K.
 Lemma fgscaleAl c g1 g2 : c *: (g1 * g2) = (c *: g1) * g2.
 Proof. by rewrite -!mul_malgC mulrA. Qed.
 
-Canonical malg_lalgType :=
-  Eval hnf in LalgType R {malg R[K]} fgscaleAl.
+HB.instance Definition _ := GRing.Lmodule_IsLalgebra.Build R {malg R[K]}
+  fgscaleAl.
 
 (* -------------------------------------------------------------------- *)
 Canonical mcoeff1g_lrmorphism := [lrmorphism of mcoeff 1%M].
@@ -1160,10 +1062,9 @@ apply/eq_bigr=> /= k1 _; apply/eq_bigr=> /= k2 _.
 by rewrite mulrC [X in X==k]mulmC.
 Qed.
 
-Canonical malg_comRingType :=
-  Eval hnf in ComRingType {malg R[K]} fgmulC.
-Canonical malg_algType :=
-  Eval hnf in CommAlgType R {malg R[K]}.
+HB.instance Definition _ := GRing.Ring_HasCommutativeMul.Build {malg R[K]}
+  fgmulC.
+HB.instance Definition _ := GRing.is_ComAlgebra.Build R {malg R[K]}.  (* FIXME: what's the purpose of this factory? *)
 End MalgComRingType.
 
 (* -------------------------------------------------------------------- *)
@@ -1556,19 +1457,9 @@ Local Notation mkcmonom m := (cmonom_of_fsfun cmonom_key m).
 Section Canonicals.
 Variable (I : choiceType).
 
-Canonical  cmonomType := Eval hnf in [newType for (@cmonom_val I)].
-Definition cmonom_eqMixin := Eval hnf in [eqMixin of {cmonom I} by <:].
-Definition cmonom_choiceMixin := Eval hnf in [choiceMixin of {cmonom I} by <:].
-
-Canonical cmonom_eqType :=
-  Eval hnf in EqType (cmonom I) cmonom_eqMixin.
-Canonical cmonom_choiceType :=
-  Eval hnf in ChoiceType (cmonom I) cmonom_choiceMixin.
-
-Canonical cmonomof_eqType :=
-  Eval hnf in EqType {cmonom I} cmonom_eqMixin.
-Canonical cmonomof_choiceType :=
-  Eval hnf in ChoiceType {cmonom I} cmonom_choiceMixin.
+HB.instance Definition _ := [IsNew for @cmonom_val I].
+HB.instance Definition _ := [Choice of cmonom I by <:].
+HB.instance Definition _ := [Choice of {cmonom I} by <:].
 End Canonicals.
 
 (* -------------------------------------------------------------------- *)
@@ -1633,12 +1524,9 @@ move: m1 m2; have gen m1 m2 : cmmul m1 m2 = cmone -> m1 = cmone.
 by move=> m1 m2 h; split; move: h; last rewrite cmmulC; apply/gen.
 Qed.
 
-Definition cmonom_monomMixin :=
-  MonomMixin cmmulA cmmul0m cmmulm0 cmmul_eq0.
-Canonical cmonom_monomType :=
-  Eval hnf in MonomType {cmonom I} cmonom_monomMixin.
-Canonical cmonom_conomType :=
-  Eval hnf in ConomType {cmonom I} cmmulC.
+HB.instance Definition _ := Choice_IsMonomialDef.Build {cmonom I}
+  cmmulA cmmul0m cmmulm0 cmmul_eq0.
+HB.instance Definition _ := MonomialDef_IsConomialDef.Build {cmonom I} cmmulC.
 End Structures.
 
 (* -------------------------------------------------------------------- *)
@@ -1732,7 +1620,7 @@ by rewrite addn_eq0=> /andP[/eqP->].
 Qed.
 
 (* -------------------------------------------------------------------- *)
-Canonical mdeg_measure := Eval hnf in @Measure [monomType of {cmonom I}]
+Canonical mdeg_measure := Eval hnf in @Measure [the monomType of {cmonom I}]
   mdeg mdeg1 mdegM mdeg_eq0I.
 
 Lemma mdeg_eq0 m : (mdeg m == 0%N) = (m == 1%M).
@@ -1780,7 +1668,7 @@ by rewrite muln_eq0 orbF => z_mi; apply/eqP/z_mi.
 Qed.
 
 (* -------------------------------------------------------------------- *)
-Canonical mnmwgt_measure := Eval hnf in @Measure [monomType of 'X_{1..n}]
+Canonical mnmwgt_measure := Eval hnf in @Measure [the monomType of 'X_{1..n}]
   mnmwgt mnmwgt1 mnmwgtM mnmwgt_eq0I.
 
 Lemma mnmwgt_eq0 m : (mnmwgt m == 0%N) = (m == 1%M).
@@ -1816,19 +1704,9 @@ Local Notation mkfmonom s :=
 Section Canonicals.
 Variable (I : choiceType).
 
-Canonical  fmonomType := Eval hnf in [newType for (@fmonom_val I)].
-Definition fmonom_eqMixin := Eval hnf in [eqMixin of {fmonom I} by <:].
-Definition fmonom_choiceMixin := Eval hnf in [choiceMixin of {fmonom I} by <:].
-
-Canonical fmonom_eqType :=
-  Eval hnf in EqType (fmonom I) fmonom_eqMixin.
-Canonical fmonomof_eqType :=
-  Eval hnf in EqType {fmonom I} fmonom_eqMixin.
-
-Canonical fmonom_choiceType :=
-  Eval hnf in ChoiceType (fmonom I) fmonom_choiceMixin.
-Canonical fmonomof_choiceType :=
-  Eval hnf in ChoiceType {fmonom I} fmonom_choiceMixin.
+HB.instance Definition _ := [IsNew for @fmonom_val I].
+HB.instance Definition _ := [Choice of fmonom I by <:].
+HB.instance Definition _ := [Choice of {fmonom I} by <:].
 End Canonicals.
 
 (* -------------------------------------------------------------------- *)
@@ -1878,10 +1756,8 @@ rewrite addn_eq0 !size_eq0 => /andP[/eqP zm1 /eqP zm2].
 by split; apply/val_eqP; rewrite /= ?(zm1, zm2).
 Qed.
 
-Definition fmonom_monomMixin :=
-  MonomMixin fmmulA fmmul1m fmmulm1 fmmul_eq1.
-Canonical fmonom_monomType :=
-  Eval hnf in MonomType {fmonom I} fmonom_monomMixin.
+HB.instance Definition _ := Choice_IsMonomialDef.Build {fmonom I}
+  fmmulA fmmul1m fmmulm1 fmmul_eq1.
 End Structures.
 
 (* -------------------------------------------------------------------- *)
@@ -1899,13 +1775,13 @@ Local Notation "'U_(' i )" := (@fmu I i).
 Local Notation fdeg := (@fdeg I).
 
 Lemma fm1 : (1%M : {fmonom I}) = [::] :> seq I.
-Proof. by rewrite /mone /= fmoneE. Qed.
+Proof. by rewrite /mone /one /= fmoneE. Qed.
 
 Lemma fmU i : U_(i) = [:: i] :> seq I.
 Proof. by rewrite fmuE. Qed.
 
 Lemma fmM m1 m2 : (m1 * m2)%M = (m1 ++ m2) :> seq I.
-Proof. by rewrite /mmul /= fmmulE. Qed.
+Proof. by rewrite /mmul /mul /= fmmulE. Qed.
 
 Lemma fdegE m : fdeg m = size m.
 Proof. by []. Qed.
@@ -1932,7 +1808,7 @@ Qed.
 
 (* -------------------------------------------------------------------- *)
 Canonical fdeg_measure :=
-  Eval hnf in @Measure [monomType of {fmonom I}] fdeg fdeg1 fdegM fdeg_eq0I.
+  Eval hnf in @Measure [the monomType of {fmonom I}] fdeg fdeg1 fdegM fdeg_eq0I.
 
 Lemma fdeg_eq0 m : (fdeg m == 0%N) = (m == 1%M).
 Proof. by apply/mf_eq0. Qed.
