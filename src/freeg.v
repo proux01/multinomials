@@ -714,7 +714,7 @@ Section FreegZmodTypeTheory.
   Proof. exact/eqP/freeg_eqP. Qed.
 
   Lemma freeg_cat (s1 s2 : seq (R * K)) :
-    [freeg s1 ++ s2] = [freeg s1] + [freeg s2].
+    [freeg (s1 ++ s2)] = [freeg s1] + [freeg s2].
   Proof.
     by apply/eqP/freeg_eqP => k; rewrite coeffD !coeff_Freeg precoeff_cat.
   Qed.

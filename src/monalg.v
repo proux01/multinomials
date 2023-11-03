@@ -55,13 +55,13 @@ Reserved Notation "<< k >>"
 Reserved Notation "g @_ k"
   (at level 3, k at level 2, left associativity, format "g @_ k").
 Reserved Notation "c %:MP"
-  (at level 2, left associativity, format "c %:MP").
+  (at level 1, left associativity, format "c %:MP").
 Reserved Notation "''X_{1..' n '}'"
   (at level 0, n at level 2).
 Reserved Notation "'U_(' n )"
   (at level 0, n at level 2, no associativity, format "'U_(' n )").
 Reserved Notation "x ^[ f , g ]"
-  (at level 2, left associativity, format "x ^[ f , g ]").
+  (at level 1, left associativity, format "x ^[ f , g ]").
 
 (* -------------------------------------------------------------------- *)
 HB.mixin Record Choice_isMonomialDef V of Choice V := {

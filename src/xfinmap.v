@@ -1,5 +1,5 @@
 (* -------------------------------------------------------------------- *)
-From mathcomp Require Import ssreflect ssrbool ssrnat eqtype ssrfun.
+From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat eqtype.
 From mathcomp Require Import choice seq path finset finfun fintype bigop.
 From mathcomp Require Import bigenough.
 From mathcomp Require Export finmap.

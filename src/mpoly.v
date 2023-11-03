@@ -125,51 +125,51 @@ Reserved Notation "[ 'multinom' F | i < n ]"
   (at level 0, i at level 0,
      format "[ '[hv' 'multinom'  F '/'  |  i  <  n ] ']'").
 Reserved Notation "'U_(' n )"
-  (at level 0, n at level 2, no associativity, format "'U_(' n )").
+  (at level 0, no associativity, format "'U_(' n )").
 Reserved Notation "{ 'mpoly' T [ n ] }"
-  (at level 0, T, n at level 2, format "{ 'mpoly'  T [ n ] }").
+  (at level 0, format "{ 'mpoly'  T [ n ] }").
 Reserved Notation "[ 'mpoly' D ]"
-  (at level 0, D at level 2, format "[ 'mpoly'  D ]").
+  (at level 0, format "[ 'mpoly'  D ]").
 Reserved Notation "{ 'ipoly' T [ n ] }"
-  (at level 0, T, n at level 2, format "{ 'ipoly'  T [ n ] }").
+  (at level 0, format "{ 'ipoly'  T [ n ] }").
 Reserved Notation "{ 'ipoly' T [ n ] }^p"
-  (at level 0, T, n at level 2, format "{ 'ipoly'  T [ n ] }^p").
+  (at level 0, format "{ 'ipoly'  T [ n ] }^p").
 Reserved Notation "''X_' i"
   (at level 8, i at level 2, format "''X_' i").
 Reserved Notation "''X_[' i ]"
-  (at level 8, i at level 2, format "''X_[' i ]").
+  (at level 0, format "''X_[' i ]").
 Reserved Notation "''X_[' R , i ]"
-  (at level 8, R, i at level 2, format "''X_[' R ,  i ]").
+  (at level 0, format "''X_[' R ,  i ]").
 Reserved Notation "c %:MP"
-  (at level 2, left associativity, format "c %:MP").
+  (at level 1, left associativity, format "c %:MP").
 Reserved Notation "c %:MP_[ n ]"
-  (at level 2, left associativity, n at level 50, format "c %:MP_[ n ]").
+  (at level 1, left associativity, n at level 50, format "c %:MP_[ n ]").
 Reserved Notation "c %:IP"
-  (at level 2, left associativity, format "c %:IP").
+  (at level 1, left associativity, format "c %:IP").
 Reserved Notation "s @_ i"
    (at level 3, i at level 2, left associativity, format "s @_ i").
 Reserved Notation "e .@[ x ]"
-  (at level 2, left associativity, format "e .@[ x ]").
+  (at level 1, left associativity, format "e .@[ x ]").
 Reserved Notation "e .@[< x >]"
-  (at level 2, left associativity, format "e .@[< x >]").
+  (at level 1, left associativity, format "e .@[< x >]").
 Reserved Notation "p \mPo q"
   (at level 50).
 Reserved Notation "x ^[ f ]"
-   (at level 2, left associativity, format "x ^[ f ]").
+   (at level 1, left associativity, format "x ^[ f ]").
 Reserved Notation "x ^[ f , g ]"
-   (at level 2, left associativity, format "x ^[ f , g ]").
+   (at level 1, left associativity, format "x ^[ f , g ]").
 Reserved Notation "p ^`M ( m )"
-   (at level 8, format "p ^`M ( m )").
+   (at level 1, format "p ^`M ( m )").
 Reserved Notation "p ^`M ( m , n )"
-   (at level 8, format "p ^`M ( m ,  n )").
+   (at level 1, format "p ^`M ( m ,  n )").
 Reserved Notation "p ^`M [ m ]"
-   (at level 8, format "p ^`M [ m ]").
+   (at level 1, format "p ^`M [ m ]").
 Reserved Notation "''s_' k"
-  (at level 8, k at level 2, format "''s_' k").
+  (at level 0, k at level 2, format "''s_' k").
 Reserved Notation "''s_' ( n , k )"
-  (at level 8, n, k at level 2, format "''s_' ( n ,  k )").
+  (at level 0, n, k at level 2, format "''s_' ( n ,  k )").
 Reserved Notation "''s_' ( K , n , k )"
-  (at level 8, n, k, K at level 2, format "''s_' ( K ,  n ,  k )").
+  (at level 0, n, k, K at level 2, format "''s_' ( K ,  n ,  k )").
 Reserved Notation "+%MM"
   (at level 0).
 Reserved Notation "-%MM"
@@ -599,14 +599,14 @@ Proof. by rewrite addmC lemc_addr. Qed.
 Lemma lemc_lt_add m1 m2 n1 n2 :
   (m1 <= n1 -> m2 < n2 -> (m1 + m2)%MM < (n1 + n2)%MM)%O.
 Proof.
-move=> le lt; apply/(le_lt_trans (y := n1 + m2)%MM).
+move=> le lt; apply/(le_lt_trans (y := (n1 + m2)%MM)).
   by rewrite lemc_add2l. by rewrite ltmc_add2r.
 Qed.
 
 Lemma ltmc_le_add m1 m2 n1 n2 :
   (m1 < n1 -> m2 <= n2 -> (m1 + m2)%MM < (n1 + n2)%MM)%O.
 Proof.
-move=> lt le; apply/(lt_le_trans (y := n1 + m2)%MM).
+move=> lt le; apply/(lt_le_trans (y := (n1 + m2)%MM)).
   by rewrite ltmc_add2l. by rewrite lemc_add2r.
 Qed.
 
@@ -617,7 +617,7 @@ Proof. by move=> lt1 /ltW /(ltmc_le_add lt1). Qed.
 Lemma lem_add m1 m2 n1 n2 :
   (m1 <= n1 -> m2 <= n2 -> (m1 + m2)%MM <= (n1 + n2)%MM)%O.
 Proof.
-move=> le1 le2; apply/(le_trans (y := m1 + n2)%MM).
+move=> le1 le2; apply/(le_trans (y := (m1 + n2)%MM)).
   by rewrite lemc_add2r. by rewrite lemc_add2l.
 Qed.
 
